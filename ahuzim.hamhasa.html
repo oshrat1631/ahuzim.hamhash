@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>יישומון שברים ואחוזים – גרסת בדיקת מובייל</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+    body{font-family:'Heebo',sans-serif; overflow-x:hidden}
+
+    /* כסף – מטבעות (1%) */
+    .coin{width:3rem;height:3rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.875rem;font-weight:700;cursor:pointer;transition:.3s;box-shadow:0 2px 4px rgba(0,0,0,.3);touch-action:manipulation}
+    .coin:hover{transform:scale(1.1)}
+    .coin-1{background:linear-gradient(45deg,#C0C0C0,#E8E8E8);color:#333}
+    .coin-2{background:linear-gradient(45deg,#B87333,#DAA520);color:#fff}
+    .coin-5{background:linear-gradient(45deg,#C0C0C0,#E8E8E8);color:#333}
+    .coin-10{background:linear-gradient(45deg,#FFD700,#FFA500);color:#333}
+    .coin-custom{background:linear-gradient(45deg,#607D8B,#90A4AE);color:#fff}
+
+    /* כסף – שטרות (10%/25%) */
+    .note{min-width:4.5rem;height:2.5rem;padding:.25rem .5rem;border-radius:.5rem;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,.25);cursor:pointer;transition:.2s;touch-action:manipulation}
+    .note:hover{transform:translateY(-1px)}
+    .note-20{background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46}
+    .note-50{background:linear-gradient(135deg,#e0e7ff,#c7d2fe);color:#1e3a8a}
+    .note-100{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e}
+    .note-200{background:linear-gradient(135deg,#fee2e2,#fecaca);color:#7f1d1d}
+    .note-custom{background:linear-gradient(135deg,#e5e7eb,#d1d5db);color:#111827}
+
+    /* כיסים */
+    .pocket,.row-pocket,.quarter-pocket{position:relative;overflow:hidden;width:100%;border:2px solid #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f9fafb;cursor:pointer;transition:.15s;min-width:0;touch-action:manipulation}
+    .pocket{aspect-ratio:1/1;background:#f9f9f9}
+    .pocket:hover{border-color:#4CAF50;background:#f0f8f0}
+    .pocket.filled,.row-pocket.filled,.quarter-pocket.filled{background:#e8f5e8;border-color:#4CAF50}
+    .grid-container{display:grid;gap:4px;width:100%;margin:0 auto}
+    .rows-container{display:grid;grid-template-rows:repeat(10,1fr);gap:4px;width:100%;margin:0 auto;aspect-ratio:1/1}
+    .row-pocket:hover,.quarter-pocket:hover{border-color:#4b5563;background:#f3f4f6}
+    .quarters-container{display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:4px;width:100%;margin:0 auto;aspect-ratio:1/1}
+
+    /* חלוקות צבע */
+    .group-layer{position:absolute;inset:0;pointer-events:none;opacity:.28;border-radius:8px;z-index:0}
+    .partition-btn.active{outline:3px solid #7C3AED; outline-offset:2px}
+
+    /* הדגשה */
+    .pocket.highlight-selected,.row-pocket.highlight-selected,.quarter-pocket.highlight-selected{outline:3px solid #10B981; outline-offset:-3px; background:#d1fae5}
+
+    /* פתיחה סגולה */
+    .instructions{background:linear-gradient(135deg,#f3e8ff 0%,#e9d5ff 100%);color:#fff;padding:1rem;border-radius:12px;margin-bottom:1.25rem}
+    .control-panel{background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 4px 6px rgba(0,0,0,.1);margin-bottom:1.25rem}
+    .selected-money{position:relative!important;z-index:100!important;border:4px solid #7C3AED!important;box-shadow:0 0 15px rgba(124,58,237,.7)!important}
+    .pocket .coin{width:90%;height:90%;font-size:clamp(.5rem,2vw,.75rem);overflow:hidden;text-align:center;word-break:break-all;display:flex;align-items:center;justify-content:center;padding:1px;position:relative;z-index:1}
+
+    /* ניווט מהיר */
+    .jump-btn{padding:.4rem .8rem;border-radius:.6rem;font-weight:700}
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen p-2 sm:p-4">
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-center text-purple-800 mb-4">🪙 יישומון שברים ואחוזים 💰</h1>
+
+    <!-- פתיחה סגולה -->
+    <div id="instructions" class="instructions">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-lg sm:text-xl">
+        <!-- הוראות שימוש -->
+        <div class="order-1 md:order-none bg-white bg-opacity-15 rounded-lg p-3 text-purple-900">
+          <h3 class="text-lg font-bold mb-2 text-purple-700">🧭 הוראות שימוש</h3>
+          <ul class="list-disc list-inside space-y-1 leading-relaxed">
+            <li>בחרו למעלה את מצב העבודה: <strong>1%</strong> / <strong>10%</strong> / <strong>25%</strong>.</li>
+            <li><strong>מהו כיס?</strong> ב־1% כל ריבוע קטן הוא כיס (1%). ב־10% כל שורה שלמה היא כיס (10%). ב־25% כל רבע הוא כיס (25%).</li>
+            <li><strong>בחרו ערך</strong>: מטבע (1%) או שטר (10%/25%) או הוסיפו ערך מותאם (כולל <strong>שברים</strong> ומספרים מעורבים).</li>
+            <li><strong>כתבו כמה כיסים</strong> תרצו למלא → לחצו <em>סמנו את הכיסים</em>.</li>
+            <li>לחצו <em>מלאו את הכיסים</em> כדי למלא אותם בערך שבחרתם.</li>
+            <li>ב־1% בלבד: לחצני <em>100/20/10/4</em> צובעים את הלוח כדי לראות חלוקות שונות.</li>
+            <li>כפתורי <em>ניקוי</em> ליד כל מטריצה מרוקנים רק את הלוח שלה.</li>
+          </ul>
+        </div>
+        <!-- מושגים -->
+        <div class="bg-white bg-opacity-15 rounded-lg p-3 text-purple-900">
+          <h3 class="text-lg font-bold mb-2 text-purple-700">🎯 מהו אחוז? (מושגים)</h3>
+          <ul class="list-disc list-inside space-y-1 leading-relaxed">
+            <li><strong>אחוז</strong> = חלק מתוך 100 חלקים שווים</li>
+            <li><strong>אחוז חלקי</strong> = החלק שאנו בוחרים (למשל: 25%)</li>
+            <li><strong>אחוז כולל</strong> = תמיד 100% (כל הדבר השלם)</li>
+            <li><strong>כמות חלקית</strong> = כמה כסף יש בחלק שבחרנו</li>
+            <li><strong>כמות כוללת</strong> = כל הכסף שיש (100%)</li>
+            <li><strong>תמורת האחוז</strong> = מה אפשר לקנות בכסף הזה</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button onclick="hideInstructions()" class="bg-white text-purple-800 px-5 py-2 rounded-lg font-bold hover:bg-purple-50 transition-colors text-base shadow">בואו נתחיל! 🚀</button>
+      </div>
+    </div>
+
+    <div id="jumpBar" class="sticky top-0 z-20 bg-white/80 backdrop-blur p-2 rounded-lg shadow flex flex-wrap gap-2 justify-center mb-3">
+      <button class="jump-btn bg-indigo-600 text-white" onclick="jumpTo('#panel1pct')">אני רוצה לחשב ב־1%</button>
+      <button class="jump-btn bg-teal-600 text-white" onclick="jumpTo('#panel10')">אני רוצה לחשב ב־10%</button>
+      <button class="jump-btn bg-amber-600 text-white" onclick="jumpTo('#panel25')">אני רוצה לחשב ב־25%</button>
+    </div>
+
+    <!-- עוגן ל-1% -->
+    <span id="panel1pct"></span>
+
+    <!-- פאנל 1% -->
+    <div class="control-panel">
+      <div class="grid grid-cols-1 gap-6">
+        <div class="w-full p-3 border-2 border-gray-300 rounded-lg">
+          <div class="flex flex-col md:flex-row items-stretch gap-6">
+            <!-- מטבעות + מותאם -->
+            <div class="flex-1 min-w-0">
+              <h3 class="text-xl sm:text-2xl font-semibold mb-1">💰 בחירת מטבע של 1%</h3>
+              <p class="text-sm text-gray-600 mb-3">בחרו מטבע לשימושכם</p>
+              <div class="flex flex-wrap gap-2 sm:gap-3" id="coinsContainer100">
+                <div class="coin coin-1" onclick="selectMoney('coin',1,100)" data-value="1" data-type="coin" role="button" aria-pressed="false" tabindex="0">₪1</div>
+                <div class="coin coin-2" onclick="selectMoney('coin',2,100)" data-value="2" data-type="coin" role="button" aria-pressed="false" tabindex="0">₪2</div>
+                <div class="coin coin-5" onclick="selectMoney('coin',5,100)" data-value="5" data-type="coin" role="button" aria-pressed="false" tabindex="0">₪5</div>
+                <div class="coin coin-10" onclick="selectMoney('coin',10,100)" data-value="10" data-type="coin" role="button" aria-pressed="false" tabindex="0">₪10</div>
+              </div>
+              <div class="mt-4">
+                <input type="text" id="customValue100" placeholder="ערך מותאם (5, 1/4, 2+3/4)" class="w-full p-2 border rounded-lg text-base" />
+                <button onclick="addCustomMoney(100)" class="w-full mt-2 bg-amber-500 text-white p-2 rounded-lg text-sm hover:bg-amber-600">הוסיפו מטבע מותאם</button>
+              </div>
+
+              <!-- בחירת/סימון/מילוי כיסים -->
+              <div class="mt-4">
+                <p class="text-sm text-gray-700 mb-2">כתבו כיסים תרצו למלא</p>
+                <input type="number" id="selectParts" placeholder="מספר כיסים (אפשר גם יותר מ‑100)" class="w-full p-3 border rounded-lg text-base" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  <button id="markBtn" onclick="selectParts()" class="w-full bg-green-500 text-white p-3 rounded-lg text-sm hover:bg-green-600">סמנו את הכיסים</button>
+                  <button onclick="fillSelectedPockets()" class="w-full bg-blue-500 text-white p-3 rounded-lg text-sm hover:bg-blue-600">מלאו את הכיסים במטבעות</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- לחצני חלוקה -->
+            <div class="w-full md:w-64 shrink-0">
+              <h3 class="text-xl sm:text-2xl font-semibold mb-3">📊 בחרו חלוקה</h3>
+              <div class="grid grid-cols-1 gap-2">
+                <button id="partitionBtn100" class="partition-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-lg" onclick="applyPartition('100')">100 חלקים · 1%</button>
+                <button id="partitionBtn20" class="partition-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-lg" onclick="applyPartition('20')">20 חלקים · 5%</button>
+                <button id="partitionBtn10" class="partition-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-lg" onclick="applyPartition('10')">10 חלקים · 10%</button>
+                <button id="partitionBtn4" class="partition-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-lg" onclick="applyPartition('4')">4 חלקים · 25%</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- סטטוס 1% (מצטבר) -->
+    <div class="bg-white rounded-lg p-4 sm:p-6 mb-6 shadow-lg">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-blue-600" id="totalValue">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">סכום כולל (₪)</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-green-600" id="filledPockets">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">כיסים מלאים = האחוז הנבחר</div>
+        </div>
+        <div>
+          <div class="flex items-center justify-center" id="selectedCoin" aria-live="polite"></div>
+          <div class="text-sm sm:text-lg text-gray-600">המטבע הנבחר</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-orange-600" id="selectedValue">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">ערך נבחר (₪)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- לוח הכיסים – 1% -->
+    <div class="bg-white rounded-lg p-2 sm:p-6 shadow-lg mb-10">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-2xl sm:text-3xl font-semibold text-center">🏦 לוח הכיסים 1% (100 תאים = 100%)</h3>
+        <button onclick="clearAll()" class="text-xs sm:text-sm px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 border border-gray-300">ניקוי הטבלה</button>
+      </div>
+      <div id="matricesWrapper" class="space-y-6">
+        <div id="pocketsGrid100" class="grid-container" style="grid-template-columns:repeat(10,minmax(28px,1fr));"></div>
+      </div>
+    </div>
+
+    <!-- פאנל 10% -->
+    <div id="panel10" class="control-panel">
+      <div class="grid grid-cols-1 gap-6">
+        <div class="w-full p-3 border-2 border-gray-300 rounded-lg">
+          <div class="flex flex-col md:flex-row items-stretch gap-6">
+            <div class="flex-1 min-w-0">
+              <h3 class="text-xl sm:text-2xl font-semibold mb-1">💵 בחירת שטר של 10%</h3>
+              <p class="text-sm text-gray-600 mb-3">בחרו שטר לשימושכם</p>
+              <div class="flex flex-wrap gap-2 sm:gap-3" id="notesContainer10">
+                <div class="note note-20" onclick="selectNote10(20)" data-value="20" role="button" aria-pressed="false" tabindex="0">₪20</div>
+                <div class="note note-50" onclick="selectNote10(50)" data-value="50" role="button" aria-pressed="false" tabindex="0">₪50</div>
+                <div class="note note-100" onclick="selectNote10(100)" data-value="100" role="button" aria-pressed="false" tabindex="0">₪100</div>
+                <div class="note note-200" onclick="selectNote10(200)" data-value="200" role="button" aria-pressed="false" tabindex="0">₪200</div>
+              </div>
+              <div class="mt-4">
+                <input type="text" id="customNote10" placeholder="ערך שטר מותאם (50, 1/2, 2+3/4)" class="w-full p-2 border rounded-lg text-base" />
+                <button onclick="addCustomNote10()" class="w-full mt-2 bg-teal-600 text-white p-2 rounded-lg text-sm hover:bg-teal-700">הוסיפו שטר מותאם</button>
+              </div>
+              <div class="mt-4">
+                <p class="text-sm text-gray-700 mb-2">כתבו כיסים תרצו למלא (שורות של 10%)</p>
+                <input type="number" id="selectRowsCount10" placeholder="מספר שורות (אפשר גם יותר מ‑10)" class="w-full p-3 border rounded-lg text-base" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  <button id="markRowsBtn10" onclick="selectRows10()" class="w-full bg-green-600 text-white p-3 rounded-lg text-sm hover:bg-green-700">סמנו את הכיסים</button>
+                  <button onclick="fillSelectedRows10()" class="w-full bg-blue-600 text-white p-3 rounded-lg text-sm hover:bg-blue-700">מלאו את הכיסים בשטרות</button>
+                </div>
+              </div>
+            </div>
+            <div class="w-full md:w-64 shrink-0 flex items-center justify-center text-gray-500 text-sm md:text-base">אין חלוקה ידנית: המטריצה היא עשיריות</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- סטטוס 10% -->
+    <div class="bg-white rounded-lg p-4 sm:p-6 mb-4 shadow-lg">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6 text-center">
+        <div>
+          <div class="flex items-center justify-center" id="selectedNote10" aria-live="polite"></div>
+          <div class="text-sm sm:text-lg text-gray-600">שטר נבחר</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-blue-600" id="totalValue10">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">סכום כולל (₪)</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-green-700" id="filledRows10">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">שורות מלאות</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-purple-700" id="selectedPercent10">0%</div>
+          <div class="text-sm sm:text-lg text-gray-600">אחוז נבחר (כיסים)</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-orange-700" id="selectedValue10">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">ערך נבחר (₪)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- לוח 10% -->
+    <div class="bg-white rounded-lg p-2 sm:p-6 shadow-lg mb-10">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-2xl sm:text-3xl font-semibold text-center">🏦 לוח העשיריות 10% (10 שורות = 100%)</h3>
+        <button onclick="clearAllRows10()" class="text-xs sm:text-sm px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 border border-gray-300">ניקוי לוח 10%</button>
+      </div>
+      <div id="matricesWrapper10" class="space-y-4">
+        <div id="rowsGrid10" class="rows-container"></div>
+      </div>
+    </div>
+
+    <!-- פאנל 25% -->
+    <div id="panel25" class="control-panel">
+      <div class="grid grid-cols-1 gap-6">
+        <div class="w-full p-3 border-2 border-gray-300 rounded-lg">
+          <div class="flex flex-col md:flex-row items-stretch gap-6">
+            <div class="flex-1 min-w-0">
+              <h3 class="text-xl sm:text-2xl font-semibold mb-1">💵 בחירת שטר של 25%</h3>
+              <p class="text-sm text-gray-600 mb-3">בחרו שטר לשימושכם</p>
+              <div class="flex flex-wrap gap-2 sm:gap-3" id="notesContainer25">
+                <div class="note note-20" onclick="selectNote25(20)" data-value="20" role="button" aria-pressed="false" tabindex="0">₪20</div>
+                <div class="note note-50" onclick="selectNote25(50)" data-value="50" role="button" aria-pressed="false" tabindex="0">₪50</div>
+                <div class="note note-100" onclick="selectNote25(100)" data-value="100" role="button" aria-pressed="false" tabindex="0">₪100</div>
+                <div class="note note-200" onclick="selectNote25(200)" data-value="200" role="button" aria-pressed="false" tabindex="0">₪200</div>
+              </div>
+              <div class="mt-4">
+                <input type="text" id="customNote25" placeholder="ערך שטר מותאם (50, 1/2, 2+3/4)" class="w-full p-2 border rounded-lg text-base" />
+                <button onclick="addCustomNote25()" class="w-full mt-2 bg-teal-600 text-white p-2 rounded-lg text-sm hover:bg-teal-700">הוסיפו שטר מותאם</button>
+              </div>
+              <div class="mt-4">
+                <p class="text-sm text-gray-700 mb-2">כתבו כיסים תרצו למלא (רבעים של 25%)</p>
+                <input type="number" id="selectQuartersCount25" placeholder="מספר רבעים (אפשר גם יותר מ‑4)" class="w-full p-3 border rounded-lg text-base" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  <button id="markQuartersBtn25" onclick="selectQuarters25()" class="w-full bg-green-600 text-white p-3 rounded-lg text-sm hover:bg-green-700">סמנו את הכיסים</button>
+                  <button onclick="fillSelectedQuarters25()" class="w-full bg-blue-600 text-white p-3 rounded-lg text-sm hover:bg-blue-700">מלאו את הכיסים בשטרות</button>
+                </div>
+              </div>
+            </div>
+            <div class="w-full md:w-64 shrink-0 flex items-center justify-center text-gray-500 text-sm md:text-base">אין חלוקה ידנית: המטריצה היא רבעים</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- סטטוס 25% -->
+    <div class="bg-white rounded-lg p-4 sm:p-6 mb-4 shadow-lg">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6 text-center">
+        <div>
+          <div class="flex items-center justify-center" id="selectedNote25" aria-live="polite"></div>
+          <div class="text-sm sm:text-lg text-gray-600">שטר נבחר</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-blue-600" id="totalValue25">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">סכום כולל (₪)</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-green-700" id="filledQuarters25">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">רבעים מלאים</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-purple-700" id="selectedPercent25">0%</div>
+          <div class="text-sm sm:text-lg text-gray-600">אחוז נבחר</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-4xl font-bold text-orange-700" id="selectedValue25">0</div>
+          <div class="text-sm sm:text-lg text-gray-600">ערך נבחר (₪)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- לוח 25% -->
+    <div class="bg-white rounded-lg p-2 sm:p-6 shadow-lg mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-2xl sm:text-3xl font-semibold text-center">🏦 לוח הרבעים 25% (4 כיסים = 100%)</h3>
+        <button onclick="clearAllQuarters25()" class="text-xs sm:text-sm px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 border border-gray-300">ניקוי לוח 25%</button>
+      </div>
+      <div id="matricesWrapper25" class="space-y-4">
+        <div id="quartersGrid25" class="quarters-container"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ===== עזר כללי =====
+    function formatNumber(num){return num%1===0?num.toString():parseFloat(num.toFixed(2)).toString()}
+    function ensureGroupLayer(el){ let layer = el.querySelector('.group-layer'); if(!layer){ layer = document.createElement('div'); layer.className = 'group-layer'; el.prepend(layer);} return layer; }
+    function hideInstructions(){ document.getElementById('instructions').style.display='none' }
+    function jumpTo(sel){ const el=document.querySelector(sel); if(!el) return; el.scrollIntoView({behavior:'smooth', block:'start'}); el.classList.add('ring-4','ring-yellow-300'); setTimeout(()=>el.classList.remove('ring-4','ring-yellow-300'),800); }
+
+    const PART_COLORS = ['#fde68a','#a7f3d0','#bfdbfe','#fca5a5','#ddd6fe','#fcd34d','#c7d2fe','#fecaca','#bbf7d0','#e9d5ff'];
+
+    // ===== 1% =====
+    let pocketsSets = []; // כל מטריצה = 100
+    let selectedMoneyType = 'coin';
+    let selectedMoneyValue = 1;
+    let currentPartitionMode = '100';
+
+    function createPockets(parts, gridId, gridIndex=0){
+      const grid=document.getElementById(gridId); grid.innerHTML='';
+      const pocketsArray=Array(parts).fill(null);
+      for(let i=0;i<parts;i++){
+        const pocket=document.createElement('div'); pocket.className='pocket';
+        pocket.setAttribute('role','button'); pocket.setAttribute('aria-pressed','false'); pocket.tabIndex=0;
+        const pid = gridIndex===0? `pocket-100-${i}` : `pocket-100-g${gridIndex}-${i}`;
+        pocket.id = pid; pocket.dataset.gridIndex = String(gridIndex); pocket.dataset.cellIndex = String(i);
+        pocket.onclick=()=>togglePocket(i,parts,gridIndex);
+        const layer=document.createElement('div'); layer.className='group-layer'; pocket.appendChild(layer);
+        grid.appendChild(pocket);
+      }
+      return pocketsArray;
+    }
+
+    function ensureGridsForCount(n){
+      const needed = Math.max(1, Math.ceil((n||0)/100));
+      const before = pocketsSets.length;
+      while(pocketsSets.length < needed){
+        const idx = pocketsSets.length; const wrapper = document.getElementById('matricesWrapper');
+        const gridId = idx===0? 'pocketsGrid100' : `pocketsGrid100_g${idx}`;
+        if(idx>0){ const gridEl = document.createElement('div'); gridEl.id = gridId; gridEl.className='grid-container'; gridEl.style.gridTemplateColumns='repeat(10,minmax(28px,1fr))'; wrapper.appendChild(gridEl); }
+        const arr = createPockets(100, gridId, idx); pocketsSets.push(arr);
+      }
+      if(pocketsSets.length > before){ applyPartition(currentPartitionMode, true); }
+    }
+
+    function selectMoney(type,value,partSize){ selectedMoneyValue=value; selectedMoneyType=type; document.querySelectorAll('.coin').forEach(el=>el.classList.remove('selected-money')); const selectedEl=document.querySelector(`#coinsContainer${partSize} [data-value='${value}']`); if(selectedEl) selectedEl.classList.add('selected-money'); renderSelectedCoin(); updateStats(); }
+
+    function parseFraction(input){ if(typeof input!=='string') input=String(input); input=input.trim(); if(input.includes('+')&&input.includes('/')){ const parts=input.split('+'); if(parts.length===2){ const whole=parseFloat(parts[0].trim()); const frac=parts[1].trim().split('/'); if(frac.length===2){ const n=parseFloat(frac[0].trim()); const d=parseFloat(frac[1].trim()); if(!isNaN(whole)&&!isNaN(n)&&!isNaN(d)&&d!==0) return whole+(n/d); } } } else if(input.includes('/')){ const p=input.split('/'); if(p.length===2){ const n=parseFloat(p[0].trim()); const d=parseFloat(p[1].trim()); if(!isNaN(n)&&!isNaN(d)&&d!==0) return n/d; } } return parseFloat(input); }
+
+    function addCustomMoney(partSize){ const inputId=`customValue${partSize}`; const raw=document.getElementById(inputId).value.trim(); const value=parseFraction(raw); if(!isNaN(value)&&value>0){ addOrSelectMoney('coin',value,`₪${raw}`,partSize); document.getElementById(inputId).value=''; } else alert('ערך לא תקין. נסו מספר (5), שבר (1/4) או מספר מעורב (2+3/4).'); }
+
+    function addOrSelectMoney(type,value,displayText,partSize){ const container=document.getElementById(`coinsContainer${partSize}`); let existing=container.querySelector(`[data-value="${value}"]`); if(existing){selectMoney(type,value,partSize);return} const el=document.createElement('div'); el.className=`${type} ${type}-custom`; el.textContent=displayText; el.setAttribute('data-value',value); el.setAttribute('data-type',type); el.onclick=()=>selectMoney(type,value,partSize); container.appendChild(el); selectMoney(type,value,partSize); }
+
+    function togglePocket(index,partSize,gridIndex=0){ const arr = pocketsSets[gridIndex] || []; const pid = gridIndex===0? `pocket-100-${index}` : `pocket-100-g${gridIndex}-${index}`; const pocket=document.getElementById(pid); if(!pocket) return; if(arr[index]===null){arr[index]=selectedMoneyValue;pocket.classList.add('filled');addMoneyToPocket(pocket,selectedMoneyType,selectedMoneyValue)} else{arr[index]=null;pocket.classList.remove('filled');pocket.innerHTML='';ensureGroupLayer(pocket)} applyPartition(currentPartitionMode, true); updateStats(); }
+
+    function addMoneyToPocket(pocket,type,value){ const el=document.createElement('div'); el.className=`${type} ${type}-custom`; el.textContent=`${formatNumber(value)}`; el.style.zIndex='1'; pocket.appendChild(el); }
+
+    function selectParts(){ const raw = document.getElementById('selectParts').value; const n=parseInt(raw); if(isNaN(n)){ if(raw==='') clearSelection(); return } ensureGridsForCount(n); clearSelection(); let remaining = n; for(let g=0; g<pocketsSets.length && remaining>0; g++){ const take = Math.min(remaining, 100); for(let i=0;i<take;i++){ const pid = g===0? `pocket-100-${i}` : `pocket-100-g${g}-${i}`; const pocket=document.getElementById(pid); pocket.classList.add('highlight-selected'); } remaining -= take; } updateStats(); }
+
+    function clearSelection(){ document.querySelectorAll('#matricesWrapper .pocket').forEach(p=>p.classList.remove('highlight-selected')); updateStats() }
+
+    function fillSelectedPockets(){ const selected = Array.from(document.querySelectorAll('#matricesWrapper .pocket.highlight-selected')); selected.forEach(pocket=>{ const g = parseInt(pocket.dataset.gridIndex||'0'); const i = parseInt(pocket.dataset.cellIndex||'0'); const arr = pocketsSets[g]; if(arr && arr[i]===null){ arr[i]=selectedMoneyValue; pocket.classList.add('filled'); pocket.innerHTML=''; addMoneyToPocket(pocket,selectedMoneyValue,selectedMoneyValue); } }); updateStats(); }
+
+    function clearAll(){ for(let g=0; g<pocketsSets.length; g++){ pocketsSets[g]=Array(100).fill(null); } document.querySelectorAll('#matricesWrapper .pocket').forEach(p=>{p.className='pocket'; p.innerHTML=''; const layer=document.createElement('div'); layer.className='group-layer'; p.appendChild(layer)}); applyPartition(currentPartitionMode, true); updateStats(); }
+
+    // חישוב סכום כולל כסכום שמולא בפועל
+    function updateStats(){
+      const total = 100;
+      const filledAll = pocketsSets.reduce((s,arr)=> s + (Array.isArray(arr)?arr.filter(v=>v!==null).length:0),0);
+      const totalSum = pocketsSets.reduce((sum,arr)=> sum + (Array.isArray(arr)?arr.reduce((a,v)=> a + (v ?? 0), 0):0), 0);
+      const selectedAll = document.querySelectorAll('#matricesWrapper .pocket.highlight-selected').length;
+      document.getElementById('totalValue').textContent = formatNumber(totalSum);
+      document.getElementById('filledPockets').textContent = filledAll;
+      const sp=document.getElementById('selectedPercent'); if(sp){ sp.textContent = formatNumber((filledAll / total) * 100) + '%'; }
+      document.getElementById('selectedValue').textContent = formatNumber(selectedAll * selectedMoneyValue);
+    }
+
+    function setActivePartitionButton(mode){ const map={ '100':'partitionBtn100','20':'partitionBtn20','10':'partitionBtn10','4':'partitionBtn4' }; Object.entries(map).forEach(([m,id])=>{ const btn=document.getElementById(id); if(!btn) return; if(m===mode) btn.classList.add('active'); else btn.classList.remove('active'); }); }
+
+    function applyPartition(mode, keepActive){ currentPartitionMode = mode; if(!keepActive) setActivePartitionButton(mode); for(let g=0; g<pocketsSets.length; g++){ for(let i=0;i<100;i++){ const pid = g===0? `pocket-100-${i}` : `pocket-100-g${g}-${i}`; const pocket=document.getElementById(pid); if(!pocket) continue; let layer=pocket.querySelector('.group-layer'); if(!layer) layer=ensureGroupLayer(pocket); let color='transparent'; if(mode==='4'){ const r=Math.floor(i/10), c=i%10; const q=(r<5?0:2)+(c<5?0:1); color=PART_COLORS[q%PART_COLORS.length]; } else if(mode==='10'){ const r=Math.floor(i/10); color=PART_COLORS[r%PART_COLORS.length]; } else if(mode==='20'){ const r=Math.floor(i/10), c=i%10; const block=(c<5?0:1)+r*2; color=PART_COLORS[block%PART_COLORS.length]; } else { color='transparent'; } layer.style.background=color; } } }
+
+    // ===== 10% =====
+    let rowsSets10 = []; let selectedNoteValue10 = 20;
+
+    function createRows10(rows, gridId, gridIndex=0){ const grid=document.getElementById(gridId); grid.innerHTML=''; const rowsArr=Array(rows).fill(null); for(let i=0;i<rows;i++){ const row=document.createElement('div'); row.className='row-pocket'; row.setAttribute('role','button'); row.setAttribute('aria-pressed','false'); row.tabIndex=0; const rid = gridIndex===0? `row-10-${i}` : `row-10-g${gridIndex}-${i}`; row.id = rid; row.dataset.gridIndex = String(gridIndex); row.dataset.rowIndex = String(i); row.onclick=()=>toggleRow10(i,gridIndex); const layer=document.createElement('div'); layer.className='group-layer'; row.appendChild(layer); grid.appendChild(row);} return rowsArr; }
+
+    function ensureRowGridsForCount10(n){ const needed = Math.max(1, Math.ceil((n||0)/10)); const before = rowsSets10.length; while(rowsSets10.length < needed){ const idx = rowsSets10.length; const wrapper = document.getElementById('matricesWrapper10'); const gridId = idx===0? 'rowsGrid10' : `rowsGrid10_g${idx}`; if(idx>0){ const gridEl=document.createElement('div'); gridEl.id=gridId; gridEl.className='rows-container'; wrapper.appendChild(gridEl); } const arr = createRows10(10, gridId, idx); rowsSets10.push(arr);} if(rowsSets10.length>before){ applyRowPartition10(); }
+    }
+
+    function applyRowPartition10(){ for(let g=0; g<rowsSets10.length; g++){ for(let r=0;r<10;r++){ const rid = g===0? `row-10-${r}` : `row-10-g${g}-${r}`; const row=document.getElementById(rid); if(!row) continue; let layer=row.querySelector('.group-layer'); if(!layer) layer=ensureGroupLayer(row); const color = PART_COLORS[r % PART_COLORS.length]; layer.style.background = color; } } }
+
+    function selectNote10(value){ selectedNoteValue10 = value; document.querySelectorAll('#notesContainer10 .note').forEach(n=>n.classList.remove('selected-money')); const el=document.querySelector(`#notesContainer10 .note[data-value='${value}']`); if(el) el.classList.add('selected-money'); renderSelectedNote10(); updateStats10(); }
+
+    function addCustomNote10(){ const input=document.getElementById('customNote10'); const raw=input.value.trim(); const value=parseFraction(raw); if(!isNaN(value)&&value>0){ const container=document.getElementById('notesContainer10'); let existing=container.querySelector(`[data-value=\"${value}\"]`); if(existing){ selectNote10(value); input.value=''; return; } const el=document.createElement('div'); el.className='note note-custom'; el.textContent=`₪${raw}`; el.setAttribute('data-value',value); el.onclick=()=>selectNote10(value); container.appendChild(el); selectNote10(value); input.value=''; } else alert('ערך לא תקין.'); }
+
+    function toggleRow10(rowIndex, gridIndex=0){ const arr = rowsSets10[gridIndex] || []; const rid = gridIndex===0? `row-10-${rowIndex}` : `row-10-g${gridIndex}-${rowIndex}`; const row=document.getElementById(rid); if(!row) return; if(arr[rowIndex]===null){ arr[rowIndex]=selectedNoteValue10; row.classList.add('filled'); addNoteToRow10(row, selectedNoteValue10); } else { arr[rowIndex]=null; row.classList.remove('filled'); row.innerHTML=''; ensureGroupLayer(row); } applyRowPartition10(); updateStats10(); }
+
+    function addNoteToRow10(row,value){ const el=document.createElement('div'); el.className='note note-custom'; el.textContent=`${formatNumber(value)}`; el.style.zIndex='1'; row.appendChild(el); }
+
+    function clearRowSelection10(){ document.querySelectorAll('#matricesWrapper10 .row-pocket').forEach(r=>r.classList.remove('highlight-selected')); updateStats10(); }
+
+    function selectRows10(){ const raw=document.getElementById('selectRowsCount10').value; const n=parseInt(raw); if(isNaN(n)){ if(raw==='') clearRowSelection10(); return; } ensureRowGridsForCount10(n); clearRowSelection10(); let remaining=n; for(let g=0; g<rowsSets10.length && remaining>0; g++){ const take=Math.min(remaining,10); for(let r=0;r<take;r++){ const rid = g===0? `row-10-${r}` : `row-10-g${g}-${r}`; const row=document.getElementById(rid); row.classList.add('highlight-selected'); } remaining-=take; } updateStats10(); }
+
+    function fillSelectedRows10(){ const selected = Array.from(document.querySelectorAll('#matricesWrapper10 .row-pocket.highlight-selected'));
+      selected.forEach(row=>{ const g=parseInt(row.dataset.gridIndex||'0'); const r=parseInt(row.dataset.rowIndex||'0'); const arr=rowsSets10[g]; if(arr && arr[r]===null){ arr[r]=selectedNoteValue10; row.classList.add('filled'); row.innerHTML=''; addNoteToRow10(row, selectedNoteValue10); } }); updateStats10(); }
+
+    function clearAllRows10(){
+      for(let g=0; g<rowsSets10.length; g++){ rowsSets10[g]=Array(10).fill(null); }
+      document.querySelectorAll('#matricesWrapper10 .row-pocket').forEach(r=>{ r.className='row-pocket'; r.innerHTML=''; const layer=document.createElement('div'); layer.className='group-layer'; r.appendChild(layer); });
+      applyRowPartition10();
+      updateStats10();
+    }
+
+    function updateStats10(){
+      const filledAll = rowsSets10.reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.filter(v => v !== null).length : 0), 0);
+      const selectedAll = document.querySelectorAll('#matricesWrapper10 .row-pocket.highlight-selected').length;
+      const percent = filledAll * 10;
+      const totalSum = rowsSets10.reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.reduce((a, v) => a + (v ?? 0), 0) : 0), 0);
+      const tv = document.getElementById('totalValue10'); if(tv) tv.textContent = formatNumber(totalSum);
+      const fr = document.getElementById('filledRows10'); if(fr) fr.textContent = filledAll;
+      const sp = document.getElementById('selectedPercent10'); if(sp) sp.textContent = formatNumber(percent) + '%';
+      document.getElementById('selectedValue10').textContent = formatNumber(selectedAll * selectedNoteValue10);
+    }
+
+    // ===== 25% =====
+    let quartersSets25 = []; let selectedNoteValue25 = 20;
+
+    function createQuarters25(count, gridId, gridIndex=0){ const grid=document.getElementById(gridId); grid.innerHTML=''; const arr=Array(count).fill(null); for(let i=0;i<count;i++){ const q=document.createElement('div'); q.className='quarter-pocket'; q.setAttribute('role','button'); q.setAttribute('aria-pressed','false'); q.tabIndex=0; const qid = gridIndex===0? `quarter-25-${i}` : `quarter-25-g${gridIndex}-${i}`; q.id = qid; q.dataset.gridIndex = String(gridIndex); q.dataset.quarterIndex = String(i); q.onclick=()=>toggleQuarter25(i,gridIndex); const layer=document.createElement('div'); layer.className='group-layer'; q.appendChild(layer); grid.appendChild(q);} return arr; }
+
+    function ensureQuarterGridsForCount25(n){ const needed = Math.max(1, Math.ceil((n||0)/4)); const before=quartersSets25.length; while(quartersSets25.length < needed){ const idx=quartersSets25.length; const wrapper=document.getElementById('matricesWrapper25'); const gridId = idx===0? 'quartersGrid25' : `quartersGrid25_g${idx}`; if(idx>0){ const gridEl=document.createElement('div'); gridEl.id=gridId; gridEl.className='quarters-container'; wrapper.appendChild(gridEl);} const arr=createQuarters25(4, gridId, idx); quartersSets25.push(arr);} if(quartersSets25.length>before){ applyQuarterPartition25(); } }
+
+    function applyQuarterPartition25(){ for(let g=0; g<quartersSets25.length; g++){ for(let i=0;i<4;i++){ const qid = g===0? `quarter-25-${i}` : `quarter-25-g${g}-${i}`; const el=document.getElementById(qid); if(!el) continue; let layer=el.querySelector('.group-layer'); if(!layer) layer=ensureGroupLayer(el); const color = PART_COLORS[i % PART_COLORS.length]; layer.style.background = color; } } }
+
+    function selectNote25(value){ selectedNoteValue25 = value; document.querySelectorAll('#notesContainer25 .note').forEach(n=>n.classList.remove('selected-money')); const el=document.querySelector(`#notesContainer25 .note[data-value='${value}']`); if(el) el.classList.add('selected-money'); renderSelectedNote25(); updateStats25(); }
+
+    function addCustomNote25(){ const input=document.getElementById('customNote25'); const raw=input.value.trim(); const value=parseFraction(raw); if(!isNaN(value)&&value>0){ const container=document.getElementById('notesContainer25'); let existing=container.querySelector(`[data-value=\"${value}\"]`); if(existing){ selectNote25(value); input.value=''; return; } const el=document.createElement('div'); el.className='note note-custom'; el.textContent=`₪${raw}`; el.setAttribute('data-value',value); el.onclick=()=>selectNote25(value); container.appendChild(el); selectNote25(value); input.value=''; } else alert('ערך לא תקין.'); }
+
+    function toggleQuarter25(qIndex, gridIndex=0){ const arr = quartersSets25[gridIndex] || []; const qid = gridIndex===0? `quarter-25-${qIndex}` : `quarter-25-g${gridIndex}-${qIndex}`; const el=document.getElementById(qid); if(!el) return; if(arr[qIndex]===null){ arr[qIndex]=selectedNoteValue25; el.classList.add('filled'); addNoteToQuarter25(el, selectedNoteValue25); } else { arr[qIndex]=null; el.classList.remove('filled'); el.innerHTML=''; ensureGroupLayer(el); } applyQuarterPartition25(); updateStats25(); }
+
+    function addNoteToQuarter25(el,value){ const n=document.createElement('div'); n.className='note note-custom'; n.textContent=`${formatNumber(value)}`; n.style.zIndex='1'; el.appendChild(n); }
+
+    function clearQuarterSelection25(){ document.querySelectorAll('#matricesWrapper25 .quarter-pocket').forEach(q=>q.classList.remove('highlight-selected')); updateStats25(); }
+
+    function selectQuarters25(){ const raw=document.getElementById('selectQuartersCount25').value; const n=parseInt(raw); if(isNaN(n)){ if(raw==='') clearQuarterSelection25(); return; } ensureQuarterGridsForCount25(n); clearQuarterSelection25(); let remaining=n; for(let g=0; g<quartersSets25.length && remaining>0; g++){ const take=Math.min(remaining,4); for(let i=0;i<take;i++){ const qid = g===0? `quarter-25-${i}` : `quarter-25-g${g}-${i}`; const el=document.getElementById(qid); el.classList.add('highlight-selected'); } remaining-=take; } updateStats25(); }
+
+    function fillSelectedQuarters25(){ const selected = Array.from(document.querySelectorAll('#matricesWrapper25 .quarter-pocket.highlight-selected')); selected.forEach(el=>{ const g=parseInt(el.dataset.gridIndex||'0'); const i=parseInt(el.dataset.quarterIndex||'0'); const arr=quartersSets25[g]; if(arr && arr[i]===null){ arr[i]=selectedNoteValue25; el.classList.add('filled'); el.innerHTML=''; addNoteToQuarter25(el, selectedNoteValue25); } }); updateStats25(); }
+
+    function clearAllQuarters25(){
+      for(let g=0; g<quartersSets25.length; g++){ quartersSets25[g]=Array(4).fill(null); }
+      document.querySelectorAll('#matricesWrapper25 .quarter-pocket').forEach(q=>{ q.className='quarter-pocket'; q.innerHTML=''; const layer=document.createElement('div'); layer.className='group-layer'; q.appendChild(layer); });
+      applyQuarterPartition25();
+      updateStats25();
+    }
+
+    function updateStats25(){ const filledAll = quartersSets25.reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.filter(v => v !== null).length : 0), 0); const selectedAll = document.querySelectorAll('#matricesWrapper25 .quarter-pocket.highlight-selected').length; const percent = filledAll * 25; const totalSum = quartersSets25.reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.reduce((a, v) => a + (v ?? 0), 0) : 0), 0); const tv = document.getElementById('totalValue25'); if(tv) tv.textContent = formatNumber(totalSum); document.getElementById('filledQuarters25').textContent = filledAll; document.getElementById('selectedPercent25').textContent = formatNumber(percent) + '%'; document.getElementById('selectedValue25').textContent = formatNumber(selectedAll * selectedNoteValue25); }
+
+    // ===== אתחול =====
+    document.addEventListener('DOMContentLoaded',()=>{
+      // 1%
+      pocketsSets.push(createPockets(100,'pocketsGrid100',0)); selectMoney('coin',1,100); applyPartition('100'); updateStats(); const partsInput = document.getElementById('selectParts'); partsInput.addEventListener('input', selectParts); partsInput.addEventListener('change', selectParts);
+      // 10%
+      rowsSets10.push(createRows10(10,'rowsGrid10',0)); applyRowPartition10(); selectNote10(20); updateStats10(); const rowsInput = document.getElementById('selectRowsCount10'); rowsInput.addEventListener('input', selectRows10); rowsInput.addEventListener('change', selectRows10);
+      // 25%
+      quartersSets25.push(createQuarters25(4,'quartersGrid25',0)); applyQuarterPartition25(); selectNote25(20); updateStats25(); const qInput = document.getElementById('selectQuartersCount25'); qInput.addEventListener('input', selectQuarters25); qInput.addEventListener('change', selectQuarters25);
+    });
+
+    function renderSelectedCoin(){
+      const cont=document.getElementById('selectedCoin');
+      if(!cont) return;
+      cont.innerHTML='';
+      if(selectedMoneyType!=='coin'){
+        const span=document.createElement('div');
+        span.textContent='₪'+formatNumber(selectedMoneyValue);
+        cont.appendChild(span);
+        return;
+      }
+      const coinDiv=document.createElement('div');
+      let cls='coin coin-custom';
+      if([1,2,5,10].includes(Number(selectedMoneyValue))){ cls='coin coin-'+String(selectedMoneyValue); }
+      coinDiv.className=cls;
+      coinDiv.style.width='2.5rem';
+      coinDiv.style.height='2.5rem';
+      coinDiv.textContent='₪'+formatNumber(selectedMoneyValue);
+      cont.appendChild(coinDiv);
+    }
+
+    function renderSelectedNote10(){
+      const cont=document.getElementById('selectedNote10');
+      if(!cont) return;
+      cont.innerHTML='';
+      const noteDiv=document.createElement('div');
+      let cls='note note-custom';
+      if([20,50,100,200].includes(Number(selectedNoteValue10))){ cls='note note-'+String(selectedNoteValue10); }
+      noteDiv.className=cls;
+      noteDiv.style.minWidth='3.5rem';
+      noteDiv.style.height='2.5rem';
+      noteDiv.textContent='₪'+formatNumber(selectedNoteValue10);
+      cont.appendChild(noteDiv);
+    }
+
+    function renderSelectedNote25(){
+      const cont=document.getElementById('selectedNote25');
+      if(!cont) return;
+      cont.innerHTML='';
+      const noteDiv=document.createElement('div');
+      let cls='note note-custom';
+      if([20,50,100,200].includes(Number(selectedNoteValue25))){ cls='note note-'+String(selectedNoteValue25); }
+      noteDiv.className=cls;
+      noteDiv.style.minWidth='3.5rem';
+      noteDiv.style.height='2.5rem';
+      noteDiv.textContent='₪'+formatNumber(selectedNoteValue25);
+      cont.appendChild(noteDiv);
+    }
+  </script>
+</body>
+</html>
